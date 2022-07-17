@@ -95,7 +95,7 @@ public class AutoUpdateService extends Service {
             public void onResponse(Call call, Response response) throws IOException {
                 String bingPic = response.body().string();
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(AutoUpdateService.this).edit();
-                editor.putString("weather",bingPic);
+                editor.putString("bing_pic",bingPic);
                 editor.apply();
             }
         });

@@ -43,6 +43,8 @@ public class Utility {
     public static boolean handleCityResponse(String response, int provinceId) {
         if (!TextUtils.isEmpty(response)) {
             try {
+//                JSONObject temp = new JSONObject(response);
+//                JSONArray allCities = temp.getJSONArray("location");
                 JSONArray allCities = new JSONArray(response);
                 for (int i = 0; i < allCities.length(); i++) {
                     JSONObject cityObject = allCities.getJSONObject(i);
@@ -87,6 +89,7 @@ public class Utility {
      * 将返回的JSON类解析成Weather实体类
      */
     public static Weather handleWeatherResponse(String response){
+        int pass = 0;
         try {
             JSONObject jsonObject = new JSONObject(response);
             JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");

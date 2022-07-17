@@ -120,6 +120,7 @@ public class ChooseAreaFragment extends Fragment {
                         WeatherActivity activity = (WeatherActivity) getActivity();
                         activity.drawerLayout.closeDrawers();
                         activity.swipeRefresh.setRefreshing(true);
+                        activity.mWeatherId = weatherId;
                         activity.requestWeather(weatherId);
                     }
                 }
@@ -143,7 +144,7 @@ public class ChooseAreaFragment extends Fragment {
      */
     private void queryProvinces() {
         titleText.setText("中国");
-        backButton.setVisibility(View.GONE);//注：需要了解清楚
+        backButton.setVisibility(View.GONE);//注：GONE理解为删除该view，前一个view占有布局
         provinceList = LitePal.findAll(Province.class);
         if (provinceList.size() > 0) {
             dataList.clear();
@@ -178,6 +179,9 @@ public class ChooseAreaFragment extends Fragment {
             int provinceCode = selectedProvince.getProvinceCode();
             String address = "http://guolin.tech/api/china/" + provinceCode;
             queryFromServer(address, "city");
+//            String provinceName = selectedProvince.getProvinceName();
+//            String address = "https://geoapi.qweather.com/v2/city/lookup?location="+provinceName+"&key=5e3d03d19239416eb5a1c5552e9a86ce";
+//            queryFromServer(address, "city");
         }
     }
 

@@ -48,7 +48,7 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView sportText;
     private ImageView bingPicImg;
     public SwipeRefreshLayout swipeRefresh;
-    private String mWeatherId;
+    public String mWeatherId;
     public DrawerLayout drawerLayout;
     private Button navButton;
 
@@ -193,6 +193,7 @@ public class WeatherActivity extends AppCompatActivity {
         carWashText.setText(carWash);
         sportText.setText(sport);
         weatherLayout.setVisibility(View.VISIBLE);
+
         Intent intent = new Intent(this, AutoUpdateService.class);
         startService(intent);
     }
