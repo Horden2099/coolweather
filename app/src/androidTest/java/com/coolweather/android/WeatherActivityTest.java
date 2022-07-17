@@ -1,10 +1,17 @@
 package com.coolweather.android;
 
+import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.swipeDown;
+import static androidx.test.espresso.action.ViewActions.swipeUp;
+import static androidx.test.espresso.core.internal.deps.dagger.internal.Preconditions.checkNotNull;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayingAtLeast;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.EasyMock2Matchers.equalTo;
+import static org.hamcrest.Matchers.hasToString;
 
 import android.view.View;
 
@@ -28,6 +35,24 @@ public class WeatherActivityTest {
     public void mainUITest() throws InterruptedException {
         onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));
         Thread.sleep(1000);
+        onView(withId(R.id.nav_button)).perform(click());
+        onView(withId(R.id.list_view)).perform(swipeUp());
+
+        onData(hasToString(startsWith("北京")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+        Thread.sleep(1000);
+        onData(hasToString(startsWith("北京")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+        Thread.sleep(1000);
+        onData(hasToString(startsWith("北京")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+        Thread.sleep(1000);
+        onView(withId(R.id.nav_button)).perform(click());
+//        onData(withItemContent("")).perform(click());
+//        Thread.sleep(1000);
     }
 
     /**
@@ -52,5 +77,13 @@ public class WeatherActivityTest {
                 action.perform(uiController, view);
             }
         };
+    }
+
+    /**
+     * 用于测试listview配置Matcher
+     */
+    public static Matcher<Object> withItemContent(String expectedText) {
+        checkNotNull(expectedText);
+        return withItemContent(equalTo(expectedText));
     }
 }
