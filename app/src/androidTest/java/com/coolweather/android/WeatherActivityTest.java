@@ -2,13 +2,21 @@ package com.coolweather.android;
 
 import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.swipeDown;
 import static androidx.test.espresso.action.ViewActions.swipeUp;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.core.internal.deps.dagger.internal.Preconditions.checkNotNull;
+import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayingAtLeast;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.EasyMock2Matchers.equalTo;
 import static org.hamcrest.Matchers.hasToString;
@@ -21,6 +29,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;
 
 import org.hamcrest.Matcher;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,22 +46,70 @@ public class WeatherActivityTest {
         Thread.sleep(1000);
         onView(withId(R.id.nav_button)).perform(click());
         onView(withId(R.id.list_view)).perform(swipeUp());
-
-        onData(hasToString(startsWith("北京")))
-                .inAdapterView(withId(R.id.list_view)).atPosition(0)
-                .perform(click());
         Thread.sleep(1000);
-        onData(hasToString(startsWith("北京")))
-                .inAdapterView(withId(R.id.list_view)).atPosition(0)
-                .perform(click());
+        chooseAreaTest1();
         Thread.sleep(1000);
-        onData(hasToString(startsWith("北京")))
-                .inAdapterView(withId(R.id.list_view)).atPosition(0)
-                .perform(click());
+        chooseAreaTest2();
+        onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));
         Thread.sleep(1000);
-        onView(withId(R.id.nav_button)).perform(click());
 //        onData(withItemContent("")).perform(click());
 //        Thread.sleep(1000);
+    }
+
+    @Test
+    public void testDialog(WeatherActivity weatherActivity) throws Exception {
+        //按下返回键
+        pressBack();
+        //验证提示弹窗是否弹出
+        onView(withText(containsString("确认退出应用吗")))
+                .inRoot(withDecorView(not(is(weatherActivity.getWindow().getDecorView()))))
+                .check(matches(isDisplayed()));
+        //点击弹窗的确认按钮
+        onView(withText("确认"))
+                .inRoot(withDecorView(not(is(weatherActivity.getWindow().getDecorView()))))
+                .perform(click());
+        Assert.assertTrue(weatherActivity.isFinishing());
+    }
+
+
+    /**
+     * 测试选择地点导航
+     */
+    private void chooseAreaTest1() throws InterruptedException {
+        onData(hasToString(startsWith("北京")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+        Thread.sleep(1000);
+        onData(hasToString(startsWith("北京")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+        Thread.sleep(1000);
+        onData(hasToString(startsWith("北京")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+    }
+
+    /**
+     * 测试选择导航返回键
+     */
+    private void chooseAreaTest2() throws InterruptedException {
+        onView(withId(R.id.nav_button)).perform(click());
+        Thread.sleep(1000);
+        onView(withId(R.id.back_button)).perform(click());
+        Thread.sleep(1000);
+        onView(withId(R.id.back_button)).perform(click());
+        Thread.sleep(1000);
+        onData(hasToString(startsWith("上海")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+        Thread.sleep(1000);
+        onData(hasToString(startsWith("上海")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
+        Thread.sleep(1000);
+        onData(hasToString(startsWith("上海")))
+                .inAdapterView(withId(R.id.list_view)).atPosition(0)
+                .perform(click());
     }
 
     /**

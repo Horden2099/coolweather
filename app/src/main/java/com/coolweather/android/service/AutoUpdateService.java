@@ -1,5 +1,6 @@
 package com.coolweather.android.service;
 
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -30,8 +31,9 @@ public class AutoUpdateService extends Service {
     }
 
     /**
-     * 根据13.5节的知识来理解
+     * 定时启动服务
      */
+    @SuppressLint("UnspecifiedImmutableFlag")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         updateWeather();
@@ -40,9 +42,16 @@ public class AutoUpdateService extends Service {
         int anHour = 8 * 60 * 60 * 1000;        //8 小时
         long triggerAtTime = SystemClock.elapsedRealtime() + anHour;
         Intent i = new Intent(this,AutoUpdateService.class);
-        PendingIntent pi = PendingIntent.getService(this,0,i,0);
-        manager.cancel(pi);
-        manager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,triggerAtTime,pi);
+        //解决PendingIntent版本匹配问题
+        PendingIntent pendingIntent;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            pendingIntent = PendingIntent.getActivity(this, 123, intent, PendingIntent.FLAG_IMMUTABLE);
+        } else {
+            pendingIntent = PendingIntent.getActivity(this, 123, intent, PendingIntent.FLAG_ONE_SHOT);
+        }
+//        PendingIntent pi = PendingIntent.getService(this,0,i,0);
+        manager.cancel(pendingIntent);
+        manager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,triggerAtTime,pendingIntent);
         return super.onStartCommand(intent, flags, startId);
     }
 
