@@ -26,7 +26,6 @@ import android.view.View;
 import androidx.test.espresso.IdlingRegistry;
 import androidx.test.espresso.UiController;
 import androidx.test.espresso.ViewAction;
-import androidx.test.espresso.ViewAssertion;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;
 
@@ -47,6 +46,7 @@ public class WeatherActivityTest {
 
     @Rule
     public ActivityTestRule<WeatherActivity> activityTestRule = new ActivityTestRule<>(WeatherActivity.class,true);
+
     SimpleIdlingResource mIdlingResource;
 
     @Before
@@ -71,12 +71,21 @@ public class WeatherActivityTest {
         Thread.sleep(1000);
     }
 
+    /**
+     * 下拉刷新测试
+     */
     @Test
     public void refreshTest() throws InterruptedException {
         onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));//下拉刷新
         Thread.sleep(1000);
         titleTextShowTest();
         nowWeatherTextShowTest();
+        forecastWeatherTextShowTest();
+        suggestionTextTest();
+
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        BaseTestLogUtility.judgeResponse(weather.status);
     }
 
     /**
@@ -173,6 +182,9 @@ public class WeatherActivityTest {
         Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
         onView(withId(R.id.degree_text)).check(matches(withText(weather.now.temperature+"℃")));
         onView(withId(R.id.weather_info_text)).check(matches(withText(weather.now.more.info)));
+
+        BaseTestLogUtility.judgeTem("实时温度", Integer.parseInt(weather.now.temperature));
+        BaseTestLogUtility.judgeInfo("实时天气",weather.now.more.info);
     }
 
     /**
@@ -187,6 +199,10 @@ public class WeatherActivityTest {
             onView(allOf(withId(R.id.max_text),hasSibling(withText(data.date)))).check(matches(withText(data.temperature.max)));
             onView(allOf(withId(R.id.min_text),hasSibling(withText(data.date)))).check(matches(withText(data.temperature.min)));
             onView(allOf(withId(R.id.info_text),hasSibling(withText(data.date)))).check(matches(withText(data.more.info)));
+
+            BaseTestLogUtility.judgeTem("预测温度最大温度", Integer.parseInt(data.temperature.max));
+            BaseTestLogUtility.judgeTem("预测温度最小温度", Integer.parseInt(data.temperature.min));
+            BaseTestLogUtility.judgeInfo("预测天气",weather.now.more.info);
         }
     }
 
@@ -231,4 +247,97 @@ public class WeatherActivityTest {
     public void tearDown() throws Exception {
         IdlingRegistry.getInstance().unregister(mIdlingResource);
     }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    //********************重载测试函数以提供函数完成整体测试**************************//
+    //////////////////////////////////////////////////////////////////////////////
+
+    public void setup(ActivityTestRule rule,SimpleIdlingResource SIR){
+        WeatherActivity activity = (WeatherActivity) rule.getActivity();
+        SIR = new SimpleIdlingResource(activity);//如果要测试需要去SimpleIdlingResource更改对应参数类
+        IdlingRegistry.getInstance().register(SIR);
+    }
+    /**
+     * 测试城市名称文本显示
+     */
+    public void titleTextShowTest(ActivityTestRule rule){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(rule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.title_city)).check(matches(withText(weather.basic.cityName)));
+    }
+
+    /**
+     * 当前天气显示测试
+     */
+    public void nowWeatherTextShowTest(ActivityTestRule rule){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(rule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.degree_text)).check(matches(withText(weather.now.temperature+"℃")));
+        onView(withId(R.id.weather_info_text)).check(matches(withText(weather.now.more.info)));
+
+        BaseTestLogUtility.judgeTem("实时温度", Integer.parseInt(weather.now.temperature));
+        BaseTestLogUtility.judgeInfo("实时天气",weather.now.more.info);
+    }
+
+    /**
+     * 预报显示测试
+     */
+    public void forecastWeatherTextShowTest(ActivityTestRule rule){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(rule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        for (Forecast data : weather.forecastList){
+            onView(withText(data.date)).check(matches(isDisplayed()));
+            onView(allOf(withId(R.id.max_text),hasSibling(withText(data.date)))).check(matches(withText(data.temperature.max)));
+            onView(allOf(withId(R.id.min_text),hasSibling(withText(data.date)))).check(matches(withText(data.temperature.min)));
+            onView(allOf(withId(R.id.info_text),hasSibling(withText(data.date)))).check(matches(withText(data.more.info)));
+
+            BaseTestLogUtility.judgeTem("预测温度最大温度", Integer.parseInt(data.temperature.max));
+            BaseTestLogUtility.judgeTem("预测温度最小温度", Integer.parseInt(data.temperature.min));
+            BaseTestLogUtility.judgeInfo("预测天气",weather.now.more.info);
+        }
+    }
+
+    /**
+     * 空气质量显示测试
+     */
+    public void AQITextShowTest(ActivityTestRule rule){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(rule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.aqi_text)).check(matches(withText(weather.aqi.city.aqi)));
+        onView(withId(R.id.pm25_text)).check(matches(withText(weather.aqi.city.pm25)));
+    }
+
+    /**
+     * 建议显示测试
+     */
+    public void suggestionTextTest(ActivityTestRule rule){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(rule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.comfort_text)).check(matches(withText("舒适度：" + weather.suggestion.comfort.info)));
+        onView(withId(R.id.car_wash_text)).check(matches(withText("洗车指数：" + weather.suggestion.carWash.info)));
+        onView(withId(R.id.sport_text)).check(matches(withText("运行建议：" + weather.suggestion.sport.info)));
+    }
+
+    /**
+     * 图片加载测试
+     * @throws Exception
+     */
+    public void loadImage(ActivityTestRule rule) throws Exception {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(rule.getActivity());
+//        String url = "http://cn.bing.com/th?id=OHR.OmijimaIsland_ROW2080465862_1920x1080.jpg&rf=LaDigue_1920x1081920x1080.jpg";
+        String url = prefs.getString("bing_pic",null);
+        onView(withId(R.id.bing_pic_img)).check(matches(withContentDescription(url)));
+        Thread.sleep(1000);
+        onView(withId(R.id.nav_button)).perform(click());
+    }
+
+    /**
+     * 注销
+     * @param SIR
+     */
+    public void tearDown(SimpleIdlingResource SIR) {
+        IdlingRegistry.getInstance().unregister(SIR);
+    }
+
 }

@@ -46,14 +46,15 @@ public class MainActivityTest {
      * 测试选择地点导航
      */
     private void chooseAreaTest() throws InterruptedException {
+        Thread.sleep(2000);
         onData(hasToString(startsWith("北京")))
                 .inAdapterView(withId(R.id.list_view)).atPosition(0)
                 .perform(click());
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         onData(hasToString(startsWith("北京")))
                 .inAdapterView(withId(R.id.list_view)).atPosition(0)
                 .perform(click());
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         onData(hasToString(startsWith("北京")))
                 .inAdapterView(withId(R.id.list_view)).atPosition(0)
                 .perform(click());
@@ -93,4 +94,16 @@ public class MainActivityTest {
         return activity[0];
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    //********************重载测试函数以提供函数完成整体测试**************************//
+    //////////////////////////////////////////////////////////////////////////////
+
+    public void mainTest(ActivityTestRule rule) throws Exception {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(rule.getActivity());
+//        第一次加载则进入地址选择
+        if (prefs.getString("weather",null) == null){
+            chooseAreaTest();
+        }
+        Thread.sleep(1000);
+    }
 }
