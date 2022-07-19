@@ -2,34 +2,42 @@ package com.coolweather.android;
 
 import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.swipeDown;
 import static androidx.test.espresso.action.ViewActions.swipeUp;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.core.internal.deps.dagger.internal.Preconditions.checkNotNull;
-import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
+import static androidx.test.espresso.matcher.ViewMatchers.hasSibling;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayingAtLeast;
+import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.EasyMock2Matchers.equalTo;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasToString;
 
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.view.View;
 
+import androidx.test.espresso.IdlingRegistry;
 import androidx.test.espresso.UiController;
 import androidx.test.espresso.ViewAction;
+import androidx.test.espresso.ViewAssertion;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;
 
+import com.coolweather.android.gson.Forecast;
+import com.coolweather.android.gson.Weather;
+import com.coolweather.android.test.SimpleIdlingResource;
+import com.coolweather.android.util.Utility;
+
 import org.hamcrest.Matcher;
-import org.junit.Assert;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,11 +46,20 @@ import org.junit.runner.RunWith;
 public class WeatherActivityTest {
 
     @Rule
-    public ActivityTestRule<WeatherActivity> weatherActivity = new ActivityTestRule<>(WeatherActivity.class,true);
+    public ActivityTestRule<WeatherActivity> activityTestRule = new ActivityTestRule<>(WeatherActivity.class,true);
+    SimpleIdlingResource mIdlingResource;
+
+    @Before
+    public void setup(){
+        WeatherActivity activity = activityTestRule.getActivity();
+        mIdlingResource = new SimpleIdlingResource(activity);//如果要测试需要去SimpleIdlingResource更改对应参数类
+        IdlingRegistry.getInstance().register(mIdlingResource);
+    }
 
     @Test
     public void mainUITest() throws InterruptedException {
-        onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));
+        //测试代码
+        onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));//下拉刷新
         Thread.sleep(1000);
         onView(withId(R.id.nav_button)).perform(click());
         onView(withId(R.id.list_view)).perform(swipeUp());
@@ -50,27 +67,17 @@ public class WeatherActivityTest {
         chooseAreaTest1();
         Thread.sleep(1000);
         chooseAreaTest2();
-        onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));
+        onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));//下拉刷新
         Thread.sleep(1000);
-//        onData(withItemContent("")).perform(click());
-//        Thread.sleep(1000);
     }
 
     @Test
-    public void testDialog(WeatherActivity weatherActivity) throws Exception {
-        //按下返回键
-        pressBack();
-        //验证提示弹窗是否弹出
-        onView(withText(containsString("确认退出应用吗")))
-                .inRoot(withDecorView(not(is(weatherActivity.getWindow().getDecorView()))))
-                .check(matches(isDisplayed()));
-        //点击弹窗的确认按钮
-        onView(withText("确认"))
-                .inRoot(withDecorView(not(is(weatherActivity.getWindow().getDecorView()))))
-                .perform(click());
-        Assert.assertTrue(weatherActivity.isFinishing());
+    public void refreshTest() throws InterruptedException {
+        onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));//下拉刷新
+        Thread.sleep(1000);
+        titleTextShowTest();
+        nowWeatherTextShowTest();
     }
-
 
     /**
      * 测试选择地点导航
@@ -112,6 +119,7 @@ public class WeatherActivityTest {
                 .perform(click());
     }
 
+
     /**
      * sleep它有时有助于帮助.潜在的原因是，
      * 待刷的视图对用户仅有89％，而espresso的刷卡行动在内部要求90％.
@@ -135,12 +143,92 @@ public class WeatherActivityTest {
             }
         };
     }
-
     /**
      * 用于测试listview配置Matcher
+     * !!!暂时没用！！！
      */
     public static Matcher<Object> withItemContent(String expectedText) {
         checkNotNull(expectedText);
         return withItemContent(equalTo(expectedText));
+    }
+    /*
+     * 以下为UI界面测试单元
+     */
+    /**
+     * 测试城市名称文本显示
+     */
+    @Test
+    public void titleTextShowTest(){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.title_city)).check(matches(withText(weather.basic.cityName)));
+    }
+
+    /**
+     * 当前天气显示测试
+     */
+    @Test
+    public void nowWeatherTextShowTest(){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.degree_text)).check(matches(withText(weather.now.temperature+"℃")));
+        onView(withId(R.id.weather_info_text)).check(matches(withText(weather.now.more.info)));
+    }
+
+    /**
+     * 预报显示测试
+     */
+    @Test
+    public void forecastWeatherTextShowTest(){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        for (Forecast data : weather.forecastList){
+            onView(withText(data.date)).check(matches(isDisplayed()));
+            onView(allOf(withId(R.id.max_text),hasSibling(withText(data.date)))).check(matches(withText(data.temperature.max)));
+            onView(allOf(withId(R.id.min_text),hasSibling(withText(data.date)))).check(matches(withText(data.temperature.min)));
+            onView(allOf(withId(R.id.info_text),hasSibling(withText(data.date)))).check(matches(withText(data.more.info)));
+        }
+    }
+
+    /**
+     * 空气质量显示测试
+     */
+    @Test
+    public void AQITextShowTest(){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.aqi_text)).check(matches(withText(weather.aqi.city.aqi)));
+        onView(withId(R.id.pm25_text)).check(matches(withText(weather.aqi.city.pm25)));
+    }
+
+    /**
+     * 建议显示测试
+     */
+    @Test
+    public void suggestionTextTest(){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+        onView(withId(R.id.comfort_text)).check(matches(withText("舒适度：" + weather.suggestion.comfort.info)));
+        onView(withId(R.id.car_wash_text)).check(matches(withText("洗车指数：" + weather.suggestion.carWash.info)));
+        onView(withId(R.id.sport_text)).check(matches(withText("运行建议：" + weather.suggestion.sport.info)));
+    }
+
+    /**
+     * 图片加载测试
+     * @throws Exception
+     */
+    @Test
+    public void loadImage() throws Exception {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+//        String url = "http://cn.bing.com/th?id=OHR.OmijimaIsland_ROW2080465862_1920x1080.jpg&rf=LaDigue_1920x1081920x1080.jpg";
+        String url = prefs.getString("bing_pic",null);
+        onView(withId(R.id.bing_pic_img)).check(matches(withContentDescription(url)));
+        Thread.sleep(1000);
+        onView(withId(R.id.nav_button)).perform(click());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        IdlingRegistry.getInstance().unregister(mIdlingResource);
     }
 }

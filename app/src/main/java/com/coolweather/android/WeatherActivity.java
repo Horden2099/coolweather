@@ -1,5 +1,7 @@
 package com.coolweather.android;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
@@ -10,6 +12,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -23,6 +26,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.coolweather.android.gson.Forecast;
 import com.coolweather.android.gson.Weather;
 import com.coolweather.android.service.AutoUpdateService;
@@ -53,6 +58,9 @@ public class WeatherActivity extends AppCompatActivity {
     public String mWeatherId;
     public DrawerLayout drawerLayout;
     private Button navButton;
+
+    private boolean mIsLoadFinished;    //用于测试判定
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +98,7 @@ public class WeatherActivity extends AppCompatActivity {
             mWeatherId = weather.basic.weatherId;
             showWeatherInfo(weather);
         }else {
-            //无缓存时去服务器查询天气 ====== 这一段都不懂
+            //无缓存时去服务器查询天气
             mWeatherId = getIntent().getStringExtra("weather_id");//需要弄懂 Extra：额外的
             weatherLayout.setVisibility(View.INVISIBLE);//隐藏ScrollView
             requestWeather(mWeatherId);
@@ -105,7 +113,7 @@ public class WeatherActivity extends AppCompatActivity {
         //引用bing每日一图
         String bingPic = prefs.getString("bing_pic",null);
         if (bingPic != null){
-            Glide.with(this).load(bingPic).into(bingPicImg);
+            loadGlide(bingPic);
         }else {
             loadBingPic();
         }
@@ -196,8 +204,9 @@ public class WeatherActivity extends AppCompatActivity {
         sportText.setText(sport);
         weatherLayout.setVisibility(View.VISIBLE);
 
-        Intent intent = new Intent(this, AutoUpdateService.class);
-        startService(intent);
+        //启动服务
+//        Intent intent = new Intent(this, AutoUpdateService.class);
+//        startService(intent);
     }
 
     /**
@@ -220,7 +229,7 @@ public class WeatherActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Glide.with(WeatherActivity.this).load(bingPic).into(bingPicImg);
+                        loadGlide(bingPic);
                     }
                 });
             }
@@ -249,5 +258,28 @@ public class WeatherActivity extends AppCompatActivity {
                 }).create().show();
     }
 
+    public void loadGlide(String bingPic){
+        Glide.with(this).load(bingPic).into(new SimpleTarget<Drawable>() {
+            @Override
+            public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                bingPicImg.setImageDrawable(resource);
+                bingPicImg.setContentDescription(bingPic);
+                mIsLoadFinished = true;
+            }
+
+            @Override
+            public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                super.onLoadFailed(errorDrawable);
+                mIsLoadFinished = false;
+            }
+        });
+    }
+    /**
+     * 返回是否成功加载图片
+     * @return
+     */
+    public boolean isLoadFinished() {
+        return mIsLoadFinished;
+    }
 
 }

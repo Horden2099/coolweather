@@ -4,6 +4,7 @@ import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.core.internal.deps.dagger.internal.Preconditions.checkNotNull;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static androidx.test.runner.lifecycle.Stage.RESUMED;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.EasyMock2Matchers.equalTo;
@@ -13,10 +14,8 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
 
@@ -30,53 +29,23 @@ import java.util.Collection;
 @RunWith(AndroidJUnit4.class)
 public class MainActivityTest {
 
-    public WeatherActivity weatherActivity;
-    public WeatherActivityTest weatherActivityTest = new WeatherActivityTest();
-
     @Rule
-    public ActivityTestRule<MainActivity> mainActivityTestRule = new ActivityTestRule<>(MainActivity.class){
-        @Override
-        protected void beforeActivityLaunched() {
-            super.beforeActivityLaunched();
-        }
-
-        @Override
-        protected void afterActivityLaunched() {
-            super.afterActivityLaunched();
-            weatherActivity = (WeatherActivity) getActivityInstance();
-        }
-
-        @Override
-        protected void afterActivityFinished() {
-            super.afterActivityFinished();
-        }
-    };
-
+    public ActivityTestRule<MainActivity> mainActivityTestRule = new ActivityTestRule<>(MainActivity.class,true);
 
     @Test
     public void mainTest() throws Exception {
-
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mainActivityTestRule.getActivity());
-        //第一次加载则进入地址选择
+//        第一次加载则进入地址选择
         if (prefs.getString("weather",null) == null){
-            chooseAreaTest1();
+            chooseAreaTest();
         }
         Thread.sleep(1000);
-//        weatherActivityTest.mainUITest();
-//        weatherActivityTest.testDialog(weatherActivity);
     }
-
-    @Test
-    public void weatherActivityTest() throws Exception {
-        weatherActivityTest.mainUITest();
-        weatherActivityTest.testDialog(weatherActivity);
-    }
-
 
     /**
      * 测试选择地点导航
      */
-    private void chooseAreaTest1() throws InterruptedException {
+    private void chooseAreaTest() throws InterruptedException {
         onData(hasToString(startsWith("北京")))
                 .inAdapterView(withId(R.id.list_view)).atPosition(0)
                 .perform(click());
@@ -102,7 +71,6 @@ public class MainActivityTest {
      * 获取下一个activity
      */
     public void navigate() {
-//        onView(withId(R.id.btn_login)).perform(click());
         Activity activity = getActivityInstance();
         assertTrue(activity instanceof WeatherActivity);
         // do more
@@ -110,7 +78,7 @@ public class MainActivityTest {
 
     public Activity getActivityInstance() {
         final Activity[] activity = new Activity[1];
-        InstrumentationRegistry.getInstrumentation().runOnMainSync(new Runnable() {
+        getInstrumentation().runOnMainSync(new Runnable() {
             @Override
             public void run() {
                 Activity currentActivity = null;
@@ -124,6 +92,5 @@ public class MainActivityTest {
         });
         return activity[0];
     }
-
 
 }

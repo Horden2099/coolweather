@@ -89,7 +89,6 @@ public class Utility {
      * 将返回的JSON类解析成Weather实体类
      */
     public static Weather handleWeatherResponse(String response){
-        int pass = 0;
         try {
             JSONObject jsonObject = new JSONObject(response);
             JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");
