@@ -50,8 +50,11 @@ public class BaseTestLogUtility {
     public static void judgeResponse(String s){
         if (s.equals("ok")){
             showWeatherActivityTestSituation("服务器返回结果正常");
-        }else{
+        }else if (s.equals("")){
+            showWeatherActivityTestSituation("无服务器返回结果");
+        }else {
             showWeatherActivityTestSituation("服务器返回结果出错");
         }
     }
+
 }

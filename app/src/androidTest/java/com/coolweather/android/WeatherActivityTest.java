@@ -7,6 +7,7 @@ import static androidx.test.espresso.action.ViewActions.swipeDown;
 import static androidx.test.espresso.action.ViewActions.swipeUp;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.core.internal.deps.dagger.internal.Preconditions.checkNotNull;
+import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
 import static androidx.test.espresso.matcher.ViewMatchers.hasSibling;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayingAtLeast;
@@ -14,11 +15,14 @@ import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.EasyMock2Matchers.equalTo;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasToString;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -76,6 +80,7 @@ public class WeatherActivityTest {
      */
     @Test
     public void refreshTest() throws InterruptedException {
+        Thread.sleep(1000);
         onView(withId(R.id.swipe_refresh)).perform(withCustomConstraints(swipeDown(),isDisplayingAtLeast(85)));//下拉刷新
         Thread.sleep(1000);
         titleTextShowTest();
@@ -83,9 +88,15 @@ public class WeatherActivityTest {
         forecastWeatherTextShowTest();
         suggestionTextTest();
 
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
-        Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
-        BaseTestLogUtility.judgeResponse(weather.status);
+        if (TestUtility.networkJudge(activityTestRule.getActivity().getBaseContext())){
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activityTestRule.getActivity());
+            Weather weather = Utility.handleWeatherResponse(sp.getString("weather",null));
+            BaseTestLogUtility.judgeResponse(weather.status);
+        }else {
+            failGetInfo();
+        }
+
+        Thread.sleep(1000);
     }
 
     /**
@@ -103,6 +114,9 @@ public class WeatherActivityTest {
         onData(hasToString(startsWith("北京")))
                 .inAdapterView(withId(R.id.list_view)).atPosition(0)
                 .perform(click());
+        if (!TestUtility.networkJudge(activityTestRule.getActivity().getBaseContext())){
+            failGetInfo();
+        }
     }
 
     /**
@@ -126,8 +140,10 @@ public class WeatherActivityTest {
         onData(hasToString(startsWith("上海")))
                 .inAdapterView(withId(R.id.list_view)).atPosition(0)
                 .perform(click());
+        if (!TestUtility.networkJudge(activityTestRule.getActivity().getBaseContext())){
+            failGetInfo();
+        }
     }
-
 
     /**
      * sleep它有时有助于帮助.潜在的原因是，
@@ -338,6 +354,24 @@ public class WeatherActivityTest {
      */
     public void tearDown(SimpleIdlingResource SIR) {
         IdlingRegistry.getInstance().unregister(SIR);
+    }
+
+    /**
+     * 打开设置页面
+     */
+    public void openSet(){
+        Intent intent = new Intent("android.intent.action.MAIN");
+        intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        intent.setClassName("com.android.phone","com.android.phone.MobileNetworkSettings");
+        activityTestRule.getActivity().startActivity(intent);
+    }
+
+    public void failGetInfo(){
+        onView(withText("获取天气信息失败"))
+                .inRoot(withDecorView(not(is(activityTestRule.getActivity().getWindow().getDecorView()))))
+                .check(matches(isDisplayed()));
+        BaseTestLogUtility.showWeatherActivityTestSituation("获取天气信息失败");
+        BaseTestLogUtility.judgeResponse("");
     }
 
 }

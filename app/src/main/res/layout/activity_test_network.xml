@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="20dp"
+    tools:context=".test.TestNetworkActivity"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/btn_network"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="NetworkOpenOrNOT"
+        android:textAllCaps="false"/>
+    <Button
+        android:id="@+id/btn_getInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="GetWeb"
+        android:textAllCaps="false"/>
+
+    <WebView
+        android:id="@+id/web_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>
